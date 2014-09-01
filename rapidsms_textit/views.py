@@ -56,12 +56,19 @@ def message_received(request, backend_name):
             logger.exception('Malformed POST message')
             return HttpResponseBadRequest("Malformed POST message")
         try:
-            # pass the message to RapidSMS
+            # get (or create) a connections object for this backend and from_address
             connections = lookup_connections(backend_name, [from_address])
+        except Exception as e:
+            r = "Error finding connection for backend_name={}, from={}, err={}".format(
+                backend_name, from_address, e)
+            logger.error(r)
+            return HttpResponseServerError(r)
+        try:
+            # pass the message to RapidSMS
             receive(text, connections[0])
-        except Exception:
-            r = "Error finding connection for backend_name={}, from={}".format(
-                backend_name, from_address)
+        except Exception as e:
+            r = "Error receiving message. backend_name={}, from={}, err={}".format(
+                backend_name, from_address, e)
             logger.error(r)
             return HttpResponseServerError(r)
         # Respond nicely to TextIt
